@@ -2,6 +2,8 @@
 
 An end-to-end data analytics and machine learning solution for the **Olist Brazilian E-Commerce Dataset**. This project encompasses relational database architecture, exploratory data analysis (EDA), interactive Power BI dashboards, advanced statistical segmentation (RFM, ABC/XYZ), predictive machine learning for freight price estimation, and a full-featured **Streamlit web application**.
 
+#### `Due to GitHub size limits, large assets are stored externally`
+
 ---
 
 ## Dashboard & Web App Previews
@@ -104,9 +106,8 @@ cd Olist_Analysis
 # Windows
 python -m venv venv
 venv\Scripts\activate
-```
+
 # macOS / Linux
-```
 python3 -m venv venv
 source venv/bin/activate
 ```
