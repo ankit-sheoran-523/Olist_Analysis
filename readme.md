@@ -2,7 +2,7 @@
 
 An end-to-end data analytics and machine learning solution for the **Olist Brazilian E-Commerce Dataset**. This project encompasses relational database architecture, exploratory data analysis (EDA), interactive Power BI dashboards, advanced statistical segmentation (RFM, ABC/XYZ), predictive machine learning for freight price estimation, and a full-featured **Streamlit web application**.
 
-#### `Due to GitHub size limits, large assets are stored externally (Drive link in Bottom).`
+#### `Due to GitHub size limits, large assets are stored externally (Drive link at Bottom).`
 
 ---
 
