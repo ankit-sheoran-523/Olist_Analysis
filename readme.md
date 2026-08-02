@@ -122,4 +122,4 @@ streamlit run app.py
 
 # Large Files
 Due to GitHub size limits, large assets are stored externally:
-- [Download Complete Files](https://drive.google.com/your-link)
+- [Download Complete Files](https://drive.google.com/drive/folders/1XIQMDaFeG6u9NxYCQbxb8PQT9HrRnCPf)
