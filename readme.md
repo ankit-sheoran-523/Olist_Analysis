@@ -122,4 +122,4 @@ streamlit run app.py
 
 # Large Files
 Due to GitHub size limits, large assets are stored externally (powerBI and trained model pipelines):
-- [Download Complete Files](https://drive.google.com/drive/folders/1XIQMDaFeG6u9NxYCQbxb8PQT9HrRnCPf)
+- [Download Complete Files](https://drive.google.com/drive/folders/1XIQMDaFeG6u9NxYCQbxb8PQT9HrRnCPf?usp=drive_link)
