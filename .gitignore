@@ -1,0 +1,12 @@
+# Ignore large model files
+ml_model/saved_pkl_models/*.pkl
+
+# Ignore dataset checkpoints
+dataset/.ipynb_checkpoints/
+
+# Ignore v1 folder
+v1/
+
+# Ignore temp/log files
+*.log
+*.tmp
