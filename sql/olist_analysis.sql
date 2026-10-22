@@ -74,18 +74,6 @@ ALTER TABLE products
 ADD CONSTRAINT fk_prod_translation 
 FOREIGN KEY (prod_category_name) REFERENCES prod_cat_translation(prod_cat_name);
 
--- get error as two values are missing in prod_cat_translation so we get them ans added them as below and re-established the relation
-
-SELECT DISTINCT p.prod_category_name
-FROM products p
-LEFT JOIN prod_cat_translation t 
-  ON p.prod_category_name = t.prod_cat_name
-WHERE t.prod_cat_name IS NULL;
-
-INSERT INTO prod_cat_translation (prod_cat_name, prod_cat_name_english)
-VALUES 
-('pc_gamer', 'pc_gamer'),
-('portateis_cozinha_e_preparadores_de_alimentos', 'portable_kitchen_food_preparers');
 
 
 -- ==========================================================================
@@ -93,20 +81,12 @@ VALUES
 -- ==========================================================================
 
 -- 1. Total Marketplace Scale
--- Objective: Calculate the platform's total gross merchandise volume (GMV), 
--- net product value, and overall unique order volume.
 with cte1 as
-(select 
-	sum(payment_value) as GMV,
-    ROUND(SUM(payment_value) / COUNT(DISTINCT order_id), 2) AS Average_Order_Value
+(select sum(payment_value) as GMV,ROUND(SUM(payment_value) / COUNT(DISTINCT order_id), 2) AS Average_Order_Value
 from order_payments),
 cte2 as
-(select 
-	sum(price) as 'Net revenue',
-    count(distinct prod_id) as 'Total Unique Products',
-    sum(freight_value) as 'Total Shipping Charges'
+(select sum(price) as 'Net revenue',count(distinct prod_id) as 'Total Unique Products',sum(freight_value) as 'Total Shipping Charges'
 from order_items),
-
 cte3 as
 (select count(distinct order_id) as 'Total orders' from orders)
 
@@ -114,14 +94,14 @@ select cte1.*,cte2.*,cte3.* from cte1,cte2,cte3;
 
 
 -- 2. Average Order Value (AOV)
--- Objective: Determine the mean consumer spend per checkout session.
 
-select count(payment_value) from order_payments where payment_value is null;  -- we dont have null values so we can directly go for avg 
-select avg(payment_value) as Avg_order_value from order_payments; -- this not accurate as we have customer who used multi payment methods for single order
+select count(payment_value) from order_payments where payment_value is null;
+select avg(payment_value) as Avg_order_value from order_payments;
 
 
 with cte1 as 
 (select sum(payment_value) as payment_order from order_payments group by order_id),
+
 cte2 as 
 (select avg(cte1.payment_order) as AOV from cte1),
 
@@ -130,6 +110,7 @@ cte3 as
 
 cte4 as 
 (select order_id,count(order_id) as items_order from order_items group by order_id),
+
 cte5 as
 (select avg(cte4.items_order) as Avg_item_order from cte4)
 
@@ -138,8 +119,6 @@ from cte2,cte3,cte5;
 
 
 -- 3. Payment Distribution Matrix
--- Objective: Compute the transaction count and total revenue share across 
--- different payment types (credit cards, boletos, vouchers, etc.).
 select 
 	payment_type as Payment_Type,
 	count(payment_type) as Total_Transaction, 
@@ -149,8 +128,7 @@ from order_payments
 group by payment_type;
 
 -- 4. Credit Installment Impact
--- Objective: Analyze the correlation between the number of installments 
--- chosen and the total transaction size.
+
 select distinct payment_type from order_payments;
 
 
@@ -174,8 +152,6 @@ call installment_analysis('boleto');
 
 
 -- 5. Peak Traffic Mapping
--- Objective: Group historical order volume by hour of the day and day of 
--- the week to identify peak shopping hours.
 
 select dt.hrs,count(dt.hrs) as orders_time from(
 select hour(order_purchase_timestamp) as hrs
@@ -190,9 +166,8 @@ from orders) as dt
 group by weekday
 order by weekday_orders desc;
 
+
 -- 6. Cumulative Financial Momentum
--- Objective: Use a Window Function to calculate the running, cumulative 
--- total of platform revenue month-over-month.
 select *,sum(total_revenue) over ( order by year,month) as cummulative_Revenue
 from
 (
@@ -206,8 +181,6 @@ group by Year,month,monthname
 
 
 -- 7. Month-over-Month (MoM) Growth Velocity
--- Objective: Deploy a CTE to measure the exact percentage growth rate 
--- of monthly marketplace revenue over time.
 
 ## using window function
 
@@ -243,8 +216,6 @@ select * from cte3;
 -- ==========================================================================
 
 -- 8. Delivery SLA (Service Level Agreement) Matrix
--- Objective: Categorize orders as early, on-time, or late by comparing the 
--- estimated delivery date to the actual delivery date to evaluate fulfillment accuracy.
 with cte1 as
 (select order_id,
 case 
@@ -271,8 +242,6 @@ select * from cte3;
 
 
 -- 9. Logistics Milestone Lag Analysis
--- Objective: Break down the total fulfillment cycle into seller processing time 
--- and carrier transit time to pinpoint exactly where delays occur.
 
 with cte1 as 
 (select distinct oi.order_id,date(order_purchase_timestamp) as order_date,date(shipping_limit_date) as est_shipping_date,date(order_delivered_carrier_date) as order_to_carrier,
@@ -300,8 +269,6 @@ select * from cte4;
 
 
 -- 10. Geographic Shipping Bottlenecks
--- Objective: Map seller-to-customer state delivery routes to identify which 
--- specific geographic lanes experience the highest rate of delayed packages.
 
 
   select seller_state,cust_state,
@@ -319,8 +286,6 @@ select * from cte4;
 
 
 -- 11. Freight Pricing Elasticity
--- Objective: Analyze the correlation between a product's physical dimensions 
--- (weight and volume) and the final shipping freight value charged.
 
 select prod_volume_cm3, weight_gm,
 case when  weight_gm  < 5000 then 'light Weight'
@@ -332,8 +297,6 @@ from products as p inner join order_items oi on oi.prod_id=p.prod_id
 order by shipping_charge desc) as dt;
 
 -- 12. Logistics Impact on Customer Sentiment
--- Objective: Compare delivery speed and SLA adherence directly against 
--- average review scores to measure how logistics affect customer satisfaction.
 
 select sla_performance_status,round(avg(coalesce(review,0)),2) as Avg_Reviews from
 (select
@@ -352,8 +315,6 @@ order by Avg_Reviews desc;
 
 
 -- 13. Regional Order Cancellation Trends
--- Objective: Evaluate canceled orders by customer state to identify if 
--- specific regions suffer from higher-than-average cancellation rates.
 
 SELECT 
     c.cust_state,
@@ -369,8 +330,6 @@ ORDER BY cancellation_rate_percentage DESC;
 
 
 -- 14. Merchant Fulfillment Reliability
--- Objective: Identify individual sellers who consistently fail to meet 
--- their shipping limit deadlines to highlight supply chain risks.
 
 select s.seller_id,s.seller_state,
 		count(oi.order_item_id) total_shipped_items,
@@ -390,8 +349,6 @@ order by merchant_sla_breach_rate desc;
 -- ==========================================================================
 
 -- 15. Category Performance Matrix (Volume vs. GMV)
--- Objective: Identify the top-grossing and highest-volume product categories,
--- mapping out what drives the core revenue of the marketplace.
 
 select distinct prod_category_name as category,prod_cat_name_english as e_category,
 	COUNT(oi.order_item_id) AS items_sold,
@@ -405,8 +362,6 @@ limit 10;
 
 
 -- 16. Product Listing Optimization (Photo Count Impact)
--- Objective: Analyze if a higher number of product photos correlates 
--- with higher sales volumes or better customer review scores.
 
 with cte1 as
 (select oi.prod_id,avg(r.review_score) as avg_product_score
@@ -430,8 +385,6 @@ GROUP BY no_of_photos
 ORDER BY no_of_photos ASC;
 
 -- 17. Quality Control by Category (Review Sentiment)
--- Objective: Rank product categories by their average review scores to identify 
--- which product lines delight customers and which cause friction.
 
 select p.prod_category_name,pt.prod_cat_name_english,
 COUNT(DISTINCT oi.order_id) AS total_orders,
@@ -444,8 +397,6 @@ group by p.prod_category_name,pt.prod_cat_name_english
 order by avg_review_Score desc;
 
 -- 18. Category-Level Cancellation Rates
--- Objective: Determine if specific product categories have disproportionately 
--- high cancellation rates, indicating potential inventory or expectation issues.
 select p.prod_category_name,pt.prod_cat_name_english,
 	count(oi.order_id) as total_orders,
 	sum( case when order_status = 'canceled' then 1 else 0 end) as canceled_orders,
@@ -461,8 +412,6 @@ order by canceled_orders_share desc
 ;
 
 -- 19. Customer Retention & Repeat Purchase Behavior
--- Objective: Track the `cust_unique_id` to measure the platform's repeat 
--- customer rate and identify how many users return for a second purchase.
 WITH cte1 AS (
     SELECT o.cust_id, SUM(op.payment_value) AS order_spend
     FROM orders o
@@ -490,7 +439,7 @@ order by orders_count desc,total_spent desc;
 -- ==========================================================================
 
 -- 20. RFM (Recency, Frequency, Monetary) Customer Segmentation
--- Objective: Rank customers based on when they last bought (Recency), how 
+-- Objective: Ranking customers based on when they last bought (Recency), how 
 -- often they buy (Frequency), and how much they spend (Monetary) to identify 
 -- the platform's most valuable users.
 
@@ -521,7 +470,7 @@ order by order_Frequency desc;
 
 
 -- 21. Seller Revenue Concentration (The Pareto Principle / 80-20 Rule)
--- Objective: Calculate the cumulative revenue share of top sellers to determine 
+-- Objective: Calculating the cumulative revenue share of top sellers to determine 
 -- if a small percentage of merchants (e.g., 20%) generate the majority of platform GMV.
 with cte1 as (
 select oi.seller_id as seller, sum(oi.price+oi.freight_value) as total_revenue
@@ -539,9 +488,8 @@ from cte1;
 
 
 -- 22. Freight Burden Ratio by State
--- Objective: Calculate shipping costs as a percentage of total order value 
--- for each customer state to identify regions where shipping costs are pricing 
--- out customers.
+-- Objective: Calculating shipping costs as a percentage of total order value 
+-- for each customer state to identify regions where shipping costs are pricing out customers.
 
 with cte1 as
 (select sum(payment_value) as total_revenue from order_payments),
@@ -573,57 +521,6 @@ from order_reviews
 group by survey_response_time
 order by survey_response_time;
 
--- 24. Monthly Customer Cohort Retention
--- Objective: Group customers by their first purchase month and track if they 
--- made subsequent purchases in the following months to measure true retention rate.
-
--- select cust_unique_id,
--- 	year(order_purchase_timestamp) as year,
--- 	month(order_purchase_timestamp) as month,
--- 	count(c.cust_id) as orders
--- from cust as c
--- inner join orders as o on o.cust_id=c.cust_id
--- group by cust_unique_id,month,year
--- having orders>1
--- order by orders desc;
-
-
-WITH cte1 AS 
-(SELECT 
-	c.cust_unique_id,
-	MIN(DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m-01')) AS first_purchase_month
-FROM cust AS c
-INNER JOIN orders AS o ON c.cust_id = o.cust_id
-GROUP BY c.cust_unique_id),
-cte2 AS 
-(
-SELECT 
-	c.cust_unique_id,
-	DATE_FORMAT(o.order_purchase_timestamp, '%Y-%m-01') AS order_month
-FROM cust AS c
-INNER JOIN orders AS o ON c.cust_id = o.cust_id),
-
-cte3 as
-(SELECT 
-    c1.first_purchase_month AS cohort,
-    TIMESTAMPDIFF(MONTH, c1.first_purchase_month, c2.order_month) AS month_index,
-    COUNT(DISTINCT c1.cust_unique_id) AS retained_customers
-FROM cte1 AS c1
-INNER JOIN cte2 AS c2 ON c1.cust_unique_id = c2.cust_unique_id
-GROUP BY cohort, month_index
-ORDER BY cohort, month_index)
-
-SELECT 
-    cohort,
-    SUM(CASE WHEN month_index = 0 THEN retained_customers ELSE 0 END) AS Month_0,
-    SUM(CASE WHEN month_index = 1 THEN retained_customers ELSE 0 END) AS Month_1,
-    SUM(CASE WHEN month_index = 2 THEN retained_customers ELSE 0 END) AS Month_2,
-    SUM(CASE WHEN month_index = 3 THEN retained_customers ELSE 0 END) AS Month_3,
-    SUM(CASE WHEN month_index = 4 THEN retained_customers ELSE 0 END) AS Month_4
-FROM cte3
-WHERE month_index <= 4
-GROUP BY cohort
-ORDER BY cohort;
 
 -- ==========================================================================
 
@@ -632,12 +529,10 @@ ORDER BY cohort;
 -- ==========================================================================
 
 -- ◯ XYZ Demand Volatility Analysis (Module 2)
-	-- Objective: Evaluate inventory predictability. In supply chain management, products are classified based on demand stability:
+	-- Objective: Evaluating inventory predictability. In supply chain management, products are classified based on demand stability:
 		-- X Class: Stable, predictable demand (Low variation).
         -- Y Class: Variable demand with seasonal fluctuations.
         -- Z Class: Highly volatile, sporadic, and unpredictable demand.
-			-- Coefficient of Variation (CV) for each product category: 
--- 				CV = Standard Deviation of Monthly Demand/Average Monthly Demand.
 
 with cte1 as
 ( select
@@ -676,7 +571,7 @@ order by cv asc;
 
 
 -- ◯ ABC Revenue Classification (Module 2)
--- 		Objective: Apply the Pareto principle across all product categories to sort inventory by financial value:
+-- 		Objective: Applying the Pareto principle across all product categories to sort inventory by financial value:
 			-- Group A: Top product lines contributing to 80% of total revenue (High Priority).
             -- Group B: Mid-tier product lines contributing to the next 15% of revenue.
             -- Group C: Long-tail product lines contributing to the final 5% of revenue.
@@ -714,7 +609,7 @@ order by cumulative_revenue_share;
 
 
 -- Product Affinity / Market Basket Analysis
-	-- Objective: Identify pairs of product categories most frequently bundled together inside the same order ID. 
+	-- Objective: Identifying pairs of product categories most frequently bundled together inside the same order ID. 
 	-- This uses a high-performance self-join structural map to isolate dual purchases while systematically removing duplicates using an alphabetical filter
 
 select 
